@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -34,24 +35,28 @@ public class PlayerMovement : MonoBehaviour
         
     }
 
-    // TODO: Add a 2D force vector to the rigidbody to make the player jump. Do not let the player jump while in the air.
     // Hint: rb.AddForce(forceVector, ForceMode2D.Impulse);
     public void Jump(InputAction.CallbackContext context) {
         if (context.performed) {
-            Debug.Log("Jumped!");
+            if (isGrounded())
+            {
+                rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            }
         }
     }
 
 
     public void OnMoveInput(InputAction.CallbackContext context) {
         inputVector = context.ReadValue<Vector2>();
-        Debug.Log(inputVector);
     }
 
-    // TODO: Add a 2D force vector to the rigidbody to move the player based on the inputVector. Do not let the player move faster than the max speed.
-    // Hint: rb.AddForce(movementForce);
-    private void Move() {
-        return;
+    private void Move()
+    {
+        if (isGrounded())
+        {
+            rb.AddForce(new(inputVector.x * playerSpeed, 0));
+            rb.velocity = new(Math.Clamp(rb.velocity.x, -maxSpeed, maxSpeed), rb.velocity.y);
+        }
     }
 
     private bool isGrounded() {
@@ -60,15 +65,17 @@ public class PlayerMovement : MonoBehaviour
         return raycastHit.collider != null;
     }
 
-    //TODO: Set the players transform.localScale to a new 3D vector based on the inputVector.
-    private void flipTowardsMovement() {
-        return;
+    private void flipTowardsMovement()
+    {
+        var sign = Math.Sign(inputVector.x);
+        if (sign != 0)
+        {
+            transform.localScale = new(sign, 1, 1);
+        }
     }
 
-    // TODO: Set the "Falling" and "Running" parameters of the animator component. 
-    // Hint: Rigidbodies have a velocity vector we can check.
     private void handleAnimations() {
-        animator.SetBool("Falling", false);
-        animator.SetBool("Running", false);
+        animator.SetBool("Running", Math.Abs(rb.velocity.x) > float.Epsilon);
+        animator.SetBool("Falling", !isGrounded());
     }
 }
